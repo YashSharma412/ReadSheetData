@@ -1,0 +1,22 @@
+{
+  "input_data": {
+    "main_table": {
+      "start_cell": "B4",
+      "end_row": 10,
+      "columns": {
+        "B": "Sub-Contractor",
+        "C": "Employee Names"
+      }
+    }
+  },
+  "output_data": {
+    "main_table": {
+      "start_cell": "G4",
+      "end_row": 10,
+      "columns": {
+        "G": "Sub-Contractor",
+        "H": "Employee Names"
+      }
+    }
+  }
+}
