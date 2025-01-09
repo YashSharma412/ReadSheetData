@@ -1,17 +1,43 @@
 {
   "mappings": [
     {
+      "field_name": "Table Heading",
+      "source": {
+        "sheet": "Sheet1",
+        "range": "B3"
+      },
+      "validation": [
+        {
+          "type": "required",
+          "message": "Table Heading is required."
+        }
+      ],
+      "transformations": ["uppercase"],
+      "destination": [
+        {
+          "sheet": "Sheet1",
+          "range": "A4"
+        }
+      ],
+      "default": "Employee Details"
+    },
+    {
       "field_name": "Employee Name",
       "source": {
         "sheet": "Sheet1",
-        "range": "B6:B15"
+        "range": "B6:B_"
       },
-      "validation": [],
+      "validation": [
+        {
+          "type": "required",
+          "message": "Employee Name is required"
+        }
+      ],
       "transformations": ["split_name", "capitalize"],
       "destination": [
         {
-          "sheet": "Sheet2",
-          "range": "A6:A15,B6:B15"
+          "sheet": "Sheet1",
+          "range": "A6:A_,B6:B_"
         }
       ]
     },
@@ -19,17 +45,13 @@
       "field_name": "Classification",
       "source": {
         "sheet": "Sheet1",
-        "range": "F6:F15"
+        "range": "F6:F_"
       },
-      "validation": [{
-        "type": "required",
-        "message": "Employee Name is required"
-      }],
       "transformations": ["capitalize"],
       "destination": [
         {
-          "sheet": "Sheet2",
-          "range": "C6:C15"
+          "sheet": "Sheet1",
+          "range": "C6:C_"
         }
       ]
     },
@@ -37,13 +59,13 @@
       "field_name": "Gender",
       "source": {
         "sheet": "Sheet1",
-        "range": "D6:D15"
+        "range": "D6:D_"
       },
       "transformations": ["capitalize"],
       "destination": [
         {
-          "sheet": "Sheet2",
-          "range": "D6:D15"
+          "sheet": "Sheet1",
+          "range": "D6:D_"
         }
       ]
     }

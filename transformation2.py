@@ -14,8 +14,10 @@ with open(mapping_file_path, 'r') as file:
 
 # Define transformation functions
 def split_name(name, separator=' '):
-    parts = name.strip().split(separator)
-    return parts[0], parts[1] if len(parts) > 1 else ''
+    parts = [part for part in name.strip().split(separator) if part]
+    if not parts:
+        return '', ' '
+    return parts[0], parts[1] if len(parts) > 1 else ' '
 
 def capitalize(text):
     if isinstance(text, list):
@@ -54,8 +56,16 @@ def apply_transformations(data, transformations):
 
 def validate_data(data, validations):
     for validation in validations:
-        if validation['type'] == 'required' and not data:
-            raise ValueError(validation['message'])
+        if validation['type'] == 'required':
+            if isinstance(data, list):
+                for item in data:
+                    if isinstance(item, list):
+                        if all(not sub_item.strip() for sub_item in item):
+                            raise ValueError(validation['message'])
+                    elif not item.strip():
+                        raise ValueError(validation['message'])
+            elif not data.strip():
+                raise ValueError(validation['message'])
 
 def read_data_from_input(input_path, mapping_schema):
     # Load the workbook and select the active sheet
@@ -81,17 +91,22 @@ def read_data_from_input(input_path, mapping_schema):
                     continue
                 data.append(row[0])
         else:
-            # Handle fixed ranges
-            start_cell, end_cell = cell_range.split(':')
-            start_col = ord(start_cell[0]) - ord('A') + 1
-            start_row = int(start_cell[1:])
-            end_col = ord(end_cell[0]) - ord('A') + 1
-            end_row = int(end_cell[1:])
-            data = []
-            for row in sheet.iter_rows(min_row=start_row, max_row=end_row, min_col=start_col, max_col=end_col, values_only=True):
-                if all(cell is None for cell in row):
-                    continue
-                data.extend([cell for cell in row if cell is not None])
+            # Handle fixed ranges and single cells
+            if ':' in cell_range:
+                start_cell, end_cell = cell_range.split(':')
+                start_col = ord(start_cell[0]) - ord('A') + 1
+                start_row = int(start_cell[1:])
+                end_col = ord(end_cell[0]) - ord('A') + 1
+                end_row = int(end_cell[1:])
+                data = []
+                for row in sheet.iter_rows(min_row=start_row, max_row=end_row, min_col=start_col, max_col=end_col, values_only=True):
+                    if all(cell is None for cell in row):
+                        continue
+                    data.extend([cell for cell in row if cell is not None])
+            else:
+                # Single cell case
+                cell = sheet[cell_range]
+                data = cell.value
         
         # Validate data if any validations are specified
         if 'validation' in mapping:
@@ -112,8 +127,11 @@ def read_data_from_input(input_path, mapping_schema):
     return data_store
 
 def use_mapping_generate_output(data_store, mapping_schema, output_file_path):
-    # Create a new workbook
-    output_workbook = Workbook()
+    # Load the existing workbook if it exists, otherwise create a new one
+    try:
+        output_workbook = load_workbook(output_file_path)
+    except FileNotFoundError:
+        output_workbook = Workbook()
     
     # Iterate over each mapping in the schema
     for mapping in mapping_schema['mappings']:
@@ -134,43 +152,36 @@ def use_mapping_generate_output(data_store, mapping_schema, output_file_path):
 
             # Iterate over each cell range specified for the destination
             for idx, cell_range in enumerate(cell_ranges):
-                # Handle dynamic ranges ending with '_'
-                if cell_range.endswith('_'):
-                    start_cell = cell_range.split(':')[0]  # e.g., "D6"
-                    col_letter = start_cell[0]  # e.g., "D"
-                    start_row = int(start_cell[1:])  # e.g., 6
-                    
-                    # Dynamically calculate the end row based on the data length
-                    end_row = start_row + len(data) - 1  # Extend to match the data length
-                    
-                    # Write data to the dynamic range
-                    for row_offset, value in enumerate(data):
-                        if isinstance(value, list):  # Handle 2D array
-                            if idx < len(value):  # Ensure we use the correct sub-index
-                                sheet[f"{col_letter}{start_row + row_offset}"] = value[idx]
-                        else:  # Handle 1D data
-                            sheet[f"{col_letter}{start_row + row_offset}"] = value
-                else:
-                    # Handle fixed ranges
-                    start_cell, end_cell = cell_range.split(':')  # e.g., "D6", "D15"
-                    start_col = ord(start_cell[0]) - ord('A') + 1  # Convert column letter to index
-                    start_row = int(start_cell[1:])  # Starting row
-                    end_row = int(end_cell[1:])  # Ending row
-
-                    # Check if the current data item is a 2D array
-                    if isinstance(data, list) and isinstance(data[0], list):
-                        if idx < len(data[0]):  # Ensure the range corresponds to the data dimensions
-                            for row_offset, item in enumerate(data):
-                                if start_row + row_offset <= end_row:  # Ensure we don't exceed the range
-                                    sheet.cell(row=start_row + row_offset, column=start_col, value=item[idx])
+                if ':' in cell_range:
+                    start_cell, end_cell = cell_range.split(':')
+                    start_col = ord(start_cell[0]) - ord('A') + 1
+                    start_row = int(start_cell[1:])
+                    if end_cell.endswith('_'):
+                        end_col = ord(end_cell[0]) - ord('A') + 1
+                        end_row = start_row + len(data) - 1
                     else:
-                        # Handle single-column data for ranges
-                        for row_offset, item in enumerate(data):
-                            if start_row + row_offset <= end_row:
-                                sheet.cell(row=start_row + row_offset, column=start_col, value=item)
+                        end_col = ord(end_cell[0]) - ord('A') + 1
+                        end_row = int(end_cell[1:])
+                    
+                    # Write data to the range
+                    for row_idx, row in enumerate(sheet.iter_rows(min_row=start_row, max_row=end_row, min_col=start_col, max_col=end_col)):
+                        for cell_idx, cell in enumerate(row):
+                            if isinstance(data, list) and isinstance(data[0], list):
+                                if row_idx < len(data) and cell_idx < len(data[row_idx]):
+                                    cell.value = data[row_idx][cell_idx]
+                            else:
+                                if row_idx < len(data):
+                                    cell.value = data[row_idx]
+                else:
+                    # Handle single cell case
+                    cell = sheet[cell_range]
+                    if isinstance(data, list) and data:
+                        cell.value = data[idx] if idx < len(data) else None
+                    else:
+                        cell.value = data
 
-        # Save the workbook to the output file path
-        output_workbook.save(output_file_path)
+    # Save the workbook to the output file path
+    output_workbook.save(output_file_path)
 
 # Call the function to read data from input
 data_store = read_data_from_input(input_file_path, mapping_schema)
