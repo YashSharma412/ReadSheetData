@@ -18,6 +18,8 @@ def split_name(name, separator=' '):
     return parts[0], parts[1] if len(parts) > 1 else ''
 
 def capitalize(text):
+    if isinstance(text, list):
+        return [capitalize(sub_text) for sub_text in text]
     return text.capitalize()
 
 def convert_to_integer(text):
@@ -35,7 +37,17 @@ def apply_transformations(data, transformations):
         func = transformation_functions.get(transformation)
         if func:
             if isinstance(data, list):
-                data = [func(item) for item in data]
+                transformed_data = []
+                for item in data:
+                    if isinstance(item, list):
+                        result = [func(sub_item) for sub_item in item]
+                    else:
+                        result = func(item)
+                    if isinstance(result, tuple):
+                        transformed_data.append(list(result))
+                    else:
+                        transformed_data.append(result)
+                data = transformed_data
             else:
                 data = func(data)
     return data
@@ -96,54 +108,69 @@ def read_data_from_input(input_path, mapping_schema):
         # Print the data
         # print(f"{field_name}: {data}")
     pprint(data_store)
-    sys.exit("Stopping the program!") # Currently stopped here for debugging
+    # sys.exit("Stopping the program!") # Currently stopped here for debugging
     return data_store
 
 def use_mapping_generate_output(data_store, mapping_schema, output_file_path):
     # Create a new workbook
     output_workbook = Workbook()
     
+    # Iterate over each mapping in the schema
     for mapping in mapping_schema['mappings']:
         field_name = mapping['field_name']
         destinations = mapping['destination']
         data = data_store.get(field_name, [])
         
+        # Iterate over each destination for the current field
         for destination in destinations:
             sheet_name = destination['sheet']
-            cell_ranges = destination['range'].split(',')
-            
-            # Get or create the sheet
+            cell_ranges = destination['range'].split(',')  # e.g., "D6:D_,E6:E_"
+
+            # Get or create the sheet in the output workbook
             if sheet_name in output_workbook.sheetnames:
                 sheet = output_workbook[sheet_name]
             else:
                 sheet = output_workbook.create_sheet(sheet_name)
-            
-            for cell_range in cell_ranges:
-                # Handle special cases for dynamic ranges
+
+            # Iterate over each cell range specified for the destination
+            for idx, cell_range in enumerate(cell_ranges):
+                # Handle dynamic ranges ending with '_'
                 if cell_range.endswith('_'):
-                    start_cell = cell_range.split(':')[0]
-                    col_letter = start_cell[0]
-                    start_row = int(start_cell[1:])
+                    start_cell = cell_range.split(':')[0]  # e.g., "D6"
+                    col_letter = start_cell[0]  # e.g., "D"
+                    start_row = int(start_cell[1:])  # e.g., 6
                     
-                    for i, value in enumerate(data, start=start_row):
-                        sheet[f"{col_letter}{i}"] = value
+                    # Dynamically calculate the end row based on the data length
+                    end_row = start_row + len(data) - 1  # Extend to match the data length
+                    
+                    # Write data to the dynamic range
+                    for row_offset, value in enumerate(data):
+                        if isinstance(value, list):  # Handle 2D array
+                            if idx < len(value):  # Ensure we use the correct sub-index
+                                sheet[f"{col_letter}{start_row + row_offset}"] = value[idx]
+                        else:  # Handle 1D data
+                            sheet[f"{col_letter}{start_row + row_offset}"] = value
                 else:
                     # Handle fixed ranges
-                    start_cell, end_cell = cell_range.split(':')
-                    start_col = ord(start_cell[0]) - ord('A') + 1
-                    start_row = int(start_cell[1:])
-                    end_col = ord(end_cell[0]) - ord('A') + 1
-                    end_row = int(end_cell[1:])
-                    
-                    data_index = 0
-                    for row in range(start_row, end_row + 1):
-                        for col in range(start_col, end_col + 1):
-                            if data_index < len(data):
-                                sheet.cell(row=row, column=col, value=data[data_index])
-                                data_index += 1
-    
-    # Save the workbook to the output file path
-    output_workbook.save(output_file_path)
+                    start_cell, end_cell = cell_range.split(':')  # e.g., "D6", "D15"
+                    start_col = ord(start_cell[0]) - ord('A') + 1  # Convert column letter to index
+                    start_row = int(start_cell[1:])  # Starting row
+                    end_row = int(end_cell[1:])  # Ending row
+
+                    # Check if the current data item is a 2D array
+                    if isinstance(data, list) and isinstance(data[0], list):
+                        if idx < len(data[0]):  # Ensure the range corresponds to the data dimensions
+                            for row_offset, item in enumerate(data):
+                                if start_row + row_offset <= end_row:  # Ensure we don't exceed the range
+                                    sheet.cell(row=start_row + row_offset, column=start_col, value=item[idx])
+                    else:
+                        # Handle single-column data for ranges
+                        for row_offset, item in enumerate(data):
+                            if start_row + row_offset <= end_row:
+                                sheet.cell(row=start_row + row_offset, column=start_col, value=item)
+
+        # Save the workbook to the output file path
+        output_workbook.save(output_file_path)
 
 # Call the function to read data from input
 data_store = read_data_from_input(input_file_path, mapping_schema)

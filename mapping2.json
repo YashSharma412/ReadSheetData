@@ -6,15 +6,12 @@
         "sheet": "Sheet1",
         "range": "B6:B15"
       },
-      "validation": [{
-        "type": "required",
-        "message": "Employee Name is required"
-      }],
-      "transformations": ["split_name, capitalize"],
+      "validation": [],
+      "transformations": ["split_name", "capitalize"],
       "destination": [
         {
           "sheet": "Sheet2",
-          "range": "D6:D15,E6:E15"
+          "range": "A6:A15,B6:B15"
         }
       ]
     },
@@ -24,11 +21,15 @@
         "sheet": "Sheet1",
         "range": "F6:F15"
       },
+      "validation": [{
+        "type": "required",
+        "message": "Employee Name is required"
+      }],
       "transformations": ["capitalize"],
       "destination": [
         {
           "sheet": "Sheet2",
-          "range": "H6:H_"
+          "range": "C6:C15"
         }
       ]
     },
@@ -42,7 +43,7 @@
       "destination": [
         {
           "sheet": "Sheet2",
-          "range": "F6:F_"
+          "range": "D6:D15"
         }
       ]
     }
