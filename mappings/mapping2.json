@@ -1,85 +1,136 @@
 {
-  "mappings": [
-    {
-      "field_name": "Table Heading",
-      "source": {
-        "sheet": "Sheet1",
-        "range": "B3"
-      },
-      "validation": [
+    "mappings": [
         {
-          "type": "required",
-          "message": "Table Heading is required."
-        }
-      ],
-      "transformations": ["uppercase"],
-      "destination": [
+            "field_name": "Table Heading",
+            "source": {
+                "sheet": "Sheet1",
+                "range": "B3"
+            },
+            "validation": [
+                {
+                    "type": "required",
+                    "message": "Table Heading is required."
+                }
+            ],
+            "transformations": ["uppercase"],
+            "destination": [
+                {
+                    "sheet": "Sheet2",
+                    "range": "A4",
+                    "merge": "A4:D5",
+                    "format": {
+                        "font": {
+                            "bold": true,
+                            "size": 14,
+                            "name": "Arial",
+                            "color": "000000"
+                        },
+                        "alignment": {
+                            "horizontal": "center",
+                            "vertical": "center",
+                            "wrap_text": true
+                        },
+                        "fill": {
+                            "type": "solid",
+                            "color": "CCCCCC"
+                        }
+                    }
+                }
+            ],
+            "default": "Employee Details"
+        },
         {
-          "sheet": "Sheet2",
-          "range": "A4"
+            "field_name": "Employee Name",
+            "source": {
+                "sheet": "Sheet1",
+                "range": "B6:B15"
+            },
+            "validation": [
+                {
+                    "type": "required",
+                    "message": "Employee Name is required"
+                }
+            ],
+            "transformations": ["split_name", "capitalize"],
+            "destination": [
+                {
+                    "sheet": "Sheet2",
+                    "range": "A6:A15,B6:B15",
+                    "format": {
+                        "border": {
+                            "style": "thin",
+                            "color": "000000"
+                        }
+                    },
+                    "header": {
+                        "range": "A5:B5",
+                        "format": {
+                            "font": {
+                                "bold": true,
+                                "size": 12,
+                                "name": "Calibri"
+                            },
+                            "fill": { "type": "solid", "color": "EEEEEE" }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "field_name": "Classification",
+            "source": {
+                "sheet": "Sheet1",
+                "range": "F6:F15"
+            },
+            "transformations": ["capitalize"],
+            "destination": [
+                {
+                    "sheet": "Sheet2",
+                    "range": "C6:C15"
+                }
+            ]
+        },
+        {
+            "field_name": "Gender",
+            "source": {
+                "sheet": "Sheet1",
+                "range": "D6:D15"
+            },
+            "transformations": ["capitalize"],
+            "destination": [
+                {
+                    "sheet": "Sheet2",
+                    "range": "D6:D15"
+                }
+            ]
         }
-      ],
-      "default": "Employee Details"
+    ],
+    "functions": {
+        "split_name": {
+            "description": "Splits a full name into first and last name",
+            "parameters": ["separator"]
+        },
+        "capitalize": {
+            "description": "Capitalizes the first letter of each word"
+        },
+        "convert_to_integer": {
+            "description": "Converts text to an integer"
+        }
     },
-    {
-      "field_name": "Employee Name",
-      "source": {
-        "sheet": "Sheet1",
-        "range": "B6:B15"
-      },
-      "validation": [
-        {
-          "type": "required",
-          "message": "Employee Name is required"
+    "default_formats": {
+        "data_cells": {
+            "border": {
+                "style": "thin",
+                "color": "000000"
+            },
+            "font": {
+                "name": "Calibri",
+                "size": 11
+            }
+        },
+        "headers": {
+            "font": { "bold": true },
+            "fill": { "type": "solid", "color": "EEEEEE" }
         }
-      ],
-      "transformations": ["split_name", "capitalize"],
-      "destination": [
-        {
-          "sheet": "Sheet2",
-          "range": "A6:A15,B6:B15"
-        }
-      ]
-    },
-    {
-      "field_name": "Classification",
-      "source": {
-        "sheet": "Sheet1",
-        "range": "F6:F15"
-      },
-      "transformations": ["capitalize"],
-      "destination": [
-        {
-          "sheet": "Sheet2",
-          "range": "C6:C15"
-        }
-      ]
-    },
-    {
-      "field_name": "Gender",
-      "source": {
-        "sheet": "Sheet1",
-        "range": "D6:D15"
-      },
-      "transformations": ["capitalize"],
-      "destination": [
-        {
-          "sheet": "Sheet2",
-          "range": "D6:D15"
-        }
-      ]
     }
-  ],
-  "functions": {
-    "split_name": {
-      "description": "Splits a full name into first and last name",
-      "parameters": ["separator"]
-    },
-    "capitalize": {
-      "description": "Capitalizes the first letter of each word"
-    },
-    "convert_to_integer": {
-      "description": "Converts text to an integer"
-    }
-  }
 }
