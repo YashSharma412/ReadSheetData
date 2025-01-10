@@ -6,7 +6,7 @@ import sys
 # Define file paths
 input_file_path = "./test/testInputFiles/input1.xlsm"
 output_file_path = "./test/testOutputFiles/output.xlsm"
-mapping_file_path = "mapping2.json"
+mapping_file_path = "./mappings/mapping2.json"
 
 # Load the mapping schema globally
 with open(mapping_file_path, 'r') as file:
@@ -27,11 +27,17 @@ def capitalize(text):
 def convert_to_integer(text):
     return int(text)
 
+def uppercase(text):
+    if isinstance(text, list):
+        return [uppercase(sub_text) for sub_text in text]
+    return text.upper()
+
 # Map transformation names to functions
 transformation_functions = {
     'split_name': split_name,
     'capitalize': capitalize,
-    'convert_to_integer': convert_to_integer
+    'convert_to_integer': convert_to_integer,
+    'uppercase': uppercase,
 }
 
 def apply_transformations(data, transformations):
@@ -127,6 +133,7 @@ def read_data_from_input(input_path, mapping_schema):
     return data_store
 
 def use_mapping_generate_output(data_store, mapping_schema, output_file_path):
+    
     # Load the existing workbook if it exists, otherwise create a new one
     try:
         output_workbook = load_workbook(output_file_path)
@@ -135,13 +142,13 @@ def use_mapping_generate_output(data_store, mapping_schema, output_file_path):
     
     # Iterate over each mapping in the schema
     for mapping in mapping_schema['mappings']:
-        field_name = mapping['field_name']
-        destinations = mapping['destination']
+        field_name = mapping['field_name'] # e.g., "Employee Name"
+        destinations = mapping['destination'] # [object{ sheet, range }, object{ sheet, range }, ...] 
         data = data_store.get(field_name, [])
         
         # Iterate over each destination for the current field
         for destination in destinations:
-            sheet_name = destination['sheet']
+            sheet_name = destination['sheet'] # Sheet1
             cell_ranges = destination['range'].split(',')  # e.g., "D6:D_,E6:E_"
 
             # Get or create the sheet in the output workbook
@@ -153,25 +160,39 @@ def use_mapping_generate_output(data_store, mapping_schema, output_file_path):
             # Iterate over each cell range specified for the destination
             for idx, cell_range in enumerate(cell_ranges):
                 if ':' in cell_range:
-                    start_cell, end_cell = cell_range.split(':')
-                    start_col = ord(start_cell[0]) - ord('A') + 1
-                    start_row = int(start_cell[1:])
-                    if end_cell.endswith('_'):
-                        end_col = ord(end_cell[0]) - ord('A') + 1
-                        end_row = start_row + len(data) - 1
+                    if cell_range.endswith('_'):
+                        start_cell = cell_range.split(':')[0]  # e.g., "D6"
+                        col_letter = start_cell[0]  # e.g., "D"
+                        start_row = int(start_cell[1:])  # e.g., 6
+                        
+                        # Dynamically calculate the end row based on the data length
+                        end_row = start_row + len(data) - 1  # Extend to match the data length
+                        
+                        # Write data to the dynamic range
+                        for row_offset, value in enumerate(data):
+                            if isinstance(value, list):  # Handle 2D array
+                                if idx < len(value):  # Ensure we use the correct sub-index
+                                    sheet[f"{col_letter}{start_row + row_offset}"] = value[idx]
+                            else:  # Handle 1D data
+                                sheet[f"{col_letter}{start_row + row_offset}"] = value
                     else:
-                        end_col = ord(end_cell[0]) - ord('A') + 1
-                        end_row = int(end_cell[1:])
-                    
-                    # Write data to the range
-                    for row_idx, row in enumerate(sheet.iter_rows(min_row=start_row, max_row=end_row, min_col=start_col, max_col=end_col)):
-                        for cell_idx, cell in enumerate(row):
-                            if isinstance(data, list) and isinstance(data[0], list):
-                                if row_idx < len(data) and cell_idx < len(data[row_idx]):
-                                    cell.value = data[row_idx][cell_idx]
-                            else:
-                                if row_idx < len(data):
-                                    cell.value = data[row_idx]
+                        # Handle fixed ranges
+                        start_cell, end_cell = cell_range.split(':')  # e.g., "D6", "D15"
+                        start_col = ord(start_cell[0]) - ord('A') + 1  # Convert column letter to index
+                        start_row = int(start_cell[1:])  # Starting row
+                        end_row = int(end_cell[1:])  # Ending row
+
+                        # Check if the current data item is a 2D array
+                        if isinstance(data, list) and isinstance(data[0], list):
+                            if idx < len(data[0]):  # Ensure the range corresponds to the data dimensions
+                                for row_offset, item in enumerate(data):
+                                    if start_row + row_offset <= end_row:  # Ensure we don't exceed the range
+                                        sheet.cell(row=start_row + row_offset, column=start_col, value=item[idx])
+                        else:
+                            # Handle single-column data for ranges
+                            for row_offset, item in enumerate(data):
+                                if start_row + row_offset <= end_row:
+                                    sheet.cell(row=start_row + row_offset, column=start_col, value=item)
                 else:
                     # Handle single cell case
                     cell = sheet[cell_range]

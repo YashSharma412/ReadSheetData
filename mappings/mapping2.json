@@ -1,0 +1,85 @@
+{
+  "mappings": [
+    {
+      "field_name": "Table Heading",
+      "source": {
+        "sheet": "Sheet1",
+        "range": "B3"
+      },
+      "validation": [
+        {
+          "type": "required",
+          "message": "Table Heading is required."
+        }
+      ],
+      "transformations": ["uppercase"],
+      "destination": [
+        {
+          "sheet": "Sheet2",
+          "range": "A4"
+        }
+      ],
+      "default": "Employee Details"
+    },
+    {
+      "field_name": "Employee Name",
+      "source": {
+        "sheet": "Sheet1",
+        "range": "B6:B15"
+      },
+      "validation": [
+        {
+          "type": "required",
+          "message": "Employee Name is required"
+        }
+      ],
+      "transformations": ["split_name", "capitalize"],
+      "destination": [
+        {
+          "sheet": "Sheet2",
+          "range": "A6:A15,B6:B15"
+        }
+      ]
+    },
+    {
+      "field_name": "Classification",
+      "source": {
+        "sheet": "Sheet1",
+        "range": "F6:F15"
+      },
+      "transformations": ["capitalize"],
+      "destination": [
+        {
+          "sheet": "Sheet2",
+          "range": "C6:C15"
+        }
+      ]
+    },
+    {
+      "field_name": "Gender",
+      "source": {
+        "sheet": "Sheet1",
+        "range": "D6:D15"
+      },
+      "transformations": ["capitalize"],
+      "destination": [
+        {
+          "sheet": "Sheet2",
+          "range": "D6:D15"
+        }
+      ]
+    }
+  ],
+  "functions": {
+    "split_name": {
+      "description": "Splits a full name into first and last name",
+      "parameters": ["separator"]
+    },
+    "capitalize": {
+      "description": "Capitalizes the first letter of each word"
+    },
+    "convert_to_integer": {
+      "description": "Converts text to an integer"
+    }
+  }
+}
