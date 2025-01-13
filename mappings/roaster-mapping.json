@@ -145,6 +145,10 @@
                             "horizontal": "left",
                             "vertical": "bottom",
                             "wrap_text": false
+                        },
+                        "border": {
+                            "style": "none",
+                            "color": "FFFFFF"
                         }
                     }
                 }
@@ -313,6 +317,42 @@
                     }
                 }
             ]
+        },
+        {
+          "field_name": "Crew Number",
+          "source": {
+              "sheet": "Sheet1",
+              "range": "E2:E_"
+          },
+          "validation": [
+            {
+                "type": "required",
+                "message": "For Crew Number, Classification column is required"
+            }
+          ],
+          "transformations": ["generate_data_based_on(classification)"],
+          "destination": [
+              {
+                  "sheet": "Sheet1",
+                  "range": "D25:D_",
+                  "format": {
+                      "font": {
+                          "size": 11,
+                          "name": "Calibri",
+                          "color": "000000"
+                      },
+                      "alignment": {
+                          "horizontal": "center",
+                          "vertical": "center",
+                          "wrap_text": false
+                      },
+                      "border": {
+                          "style": "none",
+                          "color": "FFFFFF"
+                      }
+                  }
+              }
+          ]
         }
     ],
     "functions": {
@@ -379,6 +419,16 @@
           "2055": "ST-2055",
           "SM3150": "SM1/3150",
           "3304": "ST-3304"
+        }
+    },
+    "transformation_rules": {
+        "classification": {
+            "counter_rules": {
+                "start": 1,
+                "increment_on": ["Foreman"],
+                "output_type": "string",
+                "case_sensitive": false
+            }
         }
     }
 }

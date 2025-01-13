@@ -109,6 +109,46 @@ def alternate_term(text, mapping_key):
     # If no match found or error occurred, return original text
     return text
 
+def generate_data_based_on(text, field_name):
+    """
+    Generate data based on another field's value using rules from mapping schema
+    field_name: the field whose rules to use from transformation_rules
+    """
+    if not text:
+        return text
+    
+    # Get rules for this field
+    rules = mapping_schema.get('transformation_rules', {}).get(field_name)
+    if not rules:
+        return text
+    
+    if isinstance(text, list):
+        if 'counter_rules' in rules:
+            counter = rules['counter_rules'].get('start', 1)
+            increment_values = set(rules['counter_rules'].get('increment_on', []))  # Convert to set for faster lookup
+            output_type = rules['counter_rules'].get('output_type', 'string')
+            
+            result = []
+            # First pass to identify all foreman positions
+            crew_number = counter
+            for value in text:
+                # Compare with original value before any transformations
+                original_value = str(value).strip()
+                # Check if this is a position that should trigger increment
+                if any(inc_val in original_value for inc_val in increment_values):
+                    crew_number += 1
+                result.append(str(crew_number) if output_type == 'string' else crew_number)
+            return result
+        
+        # Add more rule types here as needed
+        return text
+    
+    # Handle single value case
+    if 'counter_rules' in rules:
+        return str(rules['counter_rules'].get('start', 1))
+    
+    return text
+
 # Map transformation names to functions
 transformation_functions = {
     'split_name': split_name,
@@ -117,6 +157,7 @@ transformation_functions = {
     'uppercase': uppercase,
     'title_case': title_case,
     'alternate_term': alternate_term,
+    'generate_data_based_on': generate_data_based_on,
 }
 
 def apply_transformations(data, transformations):
@@ -283,7 +324,7 @@ def read_data_from_input(input_path, mapping_schema):
         data_store[field_name] = data
         # Print the data
         # print(f"{field_name}: {data}")
-    pprint(data_store)
+    # pprint(data_store)
     # sys.exit("Stopping the program!") # Currently stopped here for debugging
     return data_store
 
