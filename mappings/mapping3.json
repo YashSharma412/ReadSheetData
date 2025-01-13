@@ -1,4 +1,18 @@
 {
+    "input_files": [
+        {
+            "path": "./test/testInputFiles/input1.xlsm",
+            "type": "excel"
+        },
+        {
+            "path": "./test/testInputFiles/input2.xlsm",
+            "type": "excel"
+        }
+    ],
+    "output_file": {
+        "path": "./test/testOutputFiles/output.xlsm",
+        "type": "excel"
+    },
     "mappings": [
         {
             "field_name": "Table Heading",

@@ -1,0 +1,182 @@
+{
+    "input_files": [
+        {
+            "path": "./roaster/input/input1.xlsx",
+            "type": "excel"
+        },
+        {
+            "path": "./roaster/input/input2.xlsx",
+            "type": "excel"
+        }
+    ],
+    "output_file": {
+        "path": "./roaster/output/output_template.xlsx",
+        "type": "excel"
+    },
+    "mappings": [
+        {
+            "field_name": "Last Name",
+            "source": {
+                "sheet": "Sheet1",
+                "range": "D2:D_"
+            },
+            "validation": [],
+            "transformations": ["capitalize"],
+            "destination": [
+                {
+                    "sheet": "Sheet1",
+                    "range": "B25:B_",
+                    "format": {
+                        "font": {
+                            "size": 11,
+                            "name": "Calibri",
+                            "color": "000000"
+                        },
+                        "alignment": {
+                            "horizontal": "left",
+                            "vertical": "center",
+                            "wrap_text": false
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "field_name": "First Name",
+            "source": {
+                "sheet": "Sheet1",
+                "range": "C2:C_"
+            },
+            "validation": [
+                {
+                    "type": "required",
+                    "message": "First Name is required"
+                }
+            ],
+            "transformations": ["capitalize"],
+            "destination": [
+              {
+                "sheet": "Sheet1",
+                "range": "C25:C_",
+                "format": {
+                  "font": {
+                    "size": 11,
+                    "name": "Calibri",
+                    "color": "000000"
+                  },
+                  "alignment": {
+                    "horizontal": "left",
+                    "vertical": "center",
+                    "wrap_text": false
+                  }
+                }
+              }
+            ]
+        },
+        {
+          "field_name": "Classification",
+          "source": {
+            "sheet": "Sheet1",
+            "range": "E2:E_"
+          },
+          "validation": [
+            {
+              "type": "required",
+              "message": "Classification is required"
+            }
+          ],
+          "transformations": ["title_case"],
+          "destination": [
+            {
+              "sheet": "Sheet1",
+              "range": "H25:H_",
+              "format": {
+                "font": {
+                  "size": 11,
+                  "name": "Calibri",
+                  "color": "000000"
+                },
+                "alignment": {
+                  "horizontal": "center",
+                  "vertical": "bottom",
+                  "wrap_text": false
+                }
+              }
+            }
+          ]
+        },
+        {
+          "field_name": "Gender",
+          "source": {
+            "sheet": "Sheet1",
+            "range": "F2:F_"
+          },
+          "validation": [
+            {
+              "type": "required",
+              "message": "Gender is required"
+            }
+          ],
+          "transformations": ["uppercase"],
+          "destination": [
+            {
+              "sheet": "Sheet1",
+              "range": "L25:L_",
+              "format": {
+                "font": {
+                  "size": 11,
+                  "name": "Calibri",
+                  "color": "000000"
+                },
+                "alignment": {
+                  "horizontal": "left",
+                  "vertical": "bottom",
+                  "wrap_text": false
+                }
+              }
+            }
+          ]
+        }
+    ],
+    "functions": {
+        "split_name": {
+            "description": "Splits a full name into first and last name",
+            "parameters": ["separator"]
+        },
+        "capitalize": {
+            "description": "Capitalizes the first letter of each word"
+        },
+        "convert_to_integer": {
+            "description": "Converts text to an integer"
+        },
+        "title_case": {
+            "description": "Converts text to title case, properly handling small words and edge cases"
+        },
+        "uppercase": {
+            "description": "Converts text to uppercase"
+        }
+    },
+    "default_formats": {
+        "data_cells": {
+            "border": {
+                "style": "thin",
+                "color": "000000"
+            },
+            "font": {
+                "name": "Calibri",
+                "size": 11
+            }
+        },
+        "headers": {
+            "font": {
+                "bold": true,
+                "name": "Calibri",
+                "size": 12
+            },
+            "fill": {
+                "type": "solid",
+                "color": "EEEEEE"
+            }
+        }
+    }
+}

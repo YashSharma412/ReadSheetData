@@ -1,0 +1,84 @@
+{
+    "mappings": [
+        {
+            "field_name": "",
+            "source": {
+                "sheet": "",
+                "range": ""
+            },
+            "validation": [
+                {
+                    "type": "required",
+                    "message": ""
+                }
+            ],
+            "transformations": [],
+            "destination": [
+                {
+                    "sheet": "",
+                    "range": "",
+                    "merge": "",
+                    "format": {
+                        "font": {
+                            "bold": false,
+                            "size": 11,
+                            "name": "Calibri",
+                            "color": "000000"
+                        },
+                        "alignment": {
+                            "horizontal": "left",
+                            "vertical": "top",
+                            "wrap_text": false
+                        },
+                        "fill": {
+                            "type": "solid",
+                            "color": "FFFFFF"
+                        }
+                    },
+                    "conditional_format": {
+                        "when": {
+                            "field": "",
+                            "equals": ""
+                        },
+                        "apply": {
+                            "fill": {
+                                "type": "solid",
+                                "color": "FFFFFF"
+                            }
+                        }
+                    }
+                }
+            ],
+            "default": ""
+        }
+    ],
+    "functions": {
+        "custom_function": {
+            "description": "",
+            "parameters": []
+        }
+    },
+    "default_formats": {
+        "data_cells": {
+            "border": {
+                "style": "thin",
+                "color": "000000"
+            },
+            "font": {
+                "name": "Calibri",
+                "size": 11
+            }
+        },
+        "headers": {
+            "font": {
+                "bold": true,
+                "name": "Calibri",
+                "size": 12
+            },
+            "fill": {
+                "type": "solid",
+                "color": "EEEEEE"
+            }
+        }
+    }
+}

@@ -5,10 +5,15 @@ from pprint import pprint
 import sys
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 
+# # Define file paths
+# input_file_path = "./roaster/input/input1.xlsx"
+# output_file_path = "./roaster/output/output_template.xlsx"
+# mapping_file_path = "./mappings/roaster-mapping.json"
 # Define file paths
 input_file_path = "./test/testInputFiles/input1.xlsm"
 output_file_path = "./test/testOutputFiles/output.xlsm"
 mapping_file_path = "./mappings/mapping3.json"
+
 
 # Load the mapping schema globally
 with open(mapping_file_path, 'r') as file:
@@ -111,7 +116,6 @@ def validate_data(data, validations):
 def read_data_from_input(input_path, mapping_schema):
     # Load the workbook and select the active sheet
     workbook = load_workbook(input_path, data_only=True)
-    
     data_store = {}
     
     for mapping in mapping_schema['mappings']:
