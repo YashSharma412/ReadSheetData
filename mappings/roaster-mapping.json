@@ -93,7 +93,7 @@
                     "message": "Classification is required"
                 }
             ],
-            "transformations": ["title_case"],
+            "transformations": ["alternate_term(classification)","title_case"],
             "destination": [
                 {
                     "sheet": "Sheet1",
@@ -129,6 +129,7 @@
                     "message": "Gender field can be empty"
                 }
             ],
+            "default": "M",
             "transformations": ["uppercase"],
             "destination": [
                 {
@@ -233,7 +234,7 @@
                   "message": "Equip # could be empty"
               }
           ],
-          "transformations": [],
+          "transformations": ["alternate_term(equip_no)"],
           "destination": [
               {
                   "sheet": "Sheet1",
@@ -256,6 +257,62 @@
                   }
               }
           ]
+        },
+        {
+            "field_name": "Company",
+            "default": "Premium Utility Contractor",
+            "validation": [],
+            "transformations": ["title_case"],
+            "destination": [
+                {
+                    "sheet": "Sheet1",
+                    "range": "A25:A_",
+                    "format": {
+                        "font": {
+                            "size": 11,
+                            "name": "Calibri",
+                            "color": "000000"
+                        },
+                        "alignment": {
+                            "horizontal": "center",
+                            "vertical": "center",
+                            "wrap_text": false
+                        },
+                        "border": {
+                            "style": "none",
+                            "color": "FFFFFF"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "field_name": "Union/Non-Union",
+            "default": "Union",
+            "validation": [],
+            "transformations": ["capitalize"],
+            "destination": [
+                {
+                    "sheet": "Sheet1",
+                    "range": "I25:I_",
+                    "format": {
+                        "font": {
+                            "size": 11,
+                            "name": "Calibri",
+                            "color": "000000"
+                        },
+                        "alignment": {
+                            "horizontal": "center",
+                            "vertical": "center",
+                            "wrap_text": false
+                        },
+                        "border": {
+                            "style": "none",
+                            "color": "FFFFFF"
+                        }
+                    }
+                }
+            ]
         }
     ],
     "functions": {

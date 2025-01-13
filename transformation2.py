@@ -80,24 +80,33 @@ def alternate_term(text, mapping_key):
     if isinstance(text, list):
         return [alternate_term(item, mapping_key) for item in text]
     
+    # Convert input to string for comparison
+    text = str(text)
+    
     # Get the mapping dictionary for the specified key
     value_mappings = mapping_schema.get('value_mappings', {}).get(mapping_key, {})
     
     if not value_mappings:
         return text
     
+    # Convert all mapping keys to strings for comparison
+    string_mappings = {str(k): v for k, v in value_mappings.items()}
+    
     # Try exact match first
-    if text in value_mappings:
-        return value_mappings[text]
+    if text in string_mappings:
+        return string_mappings[text]
     
     # If no exact match, try fuzzy matching
-    matches = get_close_matches(text, value_mappings.keys(), n=1, cutoff=0.75)
+    try:
+        matches = get_close_matches(text, string_mappings.keys(), n=1, cutoff=0.75)
+        
+        # If we found a fuzzy match, use its mapping
+        if matches:
+            return string_mappings[matches[0]]
+    except TypeError as e:
+        print(f"Warning: Fuzzy matching failed for '{text}' - {str(e)}")
     
-    # If we found a fuzzy match, use its mapping
-    if matches:
-        return value_mappings[matches[0]]
-    
-    # If no match found, return original text
+    # If no match found or error occurred, return original text
     return text
 
 # Map transformation names to functions
@@ -143,32 +152,70 @@ def validate_data(data, validations):
     for validation in validations:
         if validation['type'] == 'required':
             if isinstance(data, list):
+                if not data:  # Empty list is invalid for required field
+                    raise ValueError(validation['message'])
                 for item in data:
                     if isinstance(item, list):
-                        if all(not sub_item.strip() for sub_item in item):
+                        if all(not sub_item or (isinstance(sub_item, str) and not sub_item.strip()) for sub_item in item):
                             raise ValueError(validation['message'])
-                    elif not item.strip():
+                    elif not item or (isinstance(item, str) and not item.strip()):
                         raise ValueError(validation['message'])
-            elif not data.strip():
+            elif not data or (isinstance(data, str) and not data.strip()):
                 raise ValueError(validation['message'])
-        # Add handling for allow-empty validation
         elif validation['type'] == 'allow-empty':
-            # No validation needed, this is just a flag
             pass
 
 def read_data_from_input(input_path, mapping_schema):
-    # Load the workbook and select the active sheet
     workbook = load_workbook(input_path, data_only=True)
     data_store = {}
     
+    # First pass: get the maximum data length from fields with source
+    max_data_length = 0
+    for mapping in mapping_schema['mappings']:
+        if 'source' in mapping:
+            source = mapping['source']
+            sheet_name = source['sheet']
+            cell_range = source['range']
+            sheet = workbook[sheet_name]
+            
+            if cell_range.endswith('_'):
+                start_cell = cell_range.split(':')[0]
+                col_letter = start_cell[0]
+                start_row = int(start_cell[1:])
+                data_length = 0
+                col_idx = column_index_from_string(col_letter)
+                for row in sheet.iter_rows(min_row=start_row, min_col=col_idx, max_col=col_idx, values_only=True):
+                    if row[0] is not None:
+                        data_length += 1
+                max_data_length = max(max_data_length, data_length)
+    
+    # Second pass: process all fields
     for mapping in mapping_schema['mappings']:
         field_name = mapping['field_name']
+        default_value = mapping.get('default')
+        
+        # Check if this is a hardcoded field (no source)
+        if 'source' not in mapping:
+            if default_value is not None:
+                if isinstance(mapping['destination'][0]['range'], str) and ':' in mapping['destination'][0]['range']:
+                    # For range destinations, create list of default values matching max length
+                    data = [default_value] * max_data_length
+                else:
+                    # For single cell destinations, use single value
+                    data = default_value
+                data_store[field_name] = data
+            continue
+        
         source = mapping['source']
         sheet_name = source['sheet']
         cell_range = source['range']
         sheet = workbook[sheet_name]
         
-        # Check if field allows none
+        # Check validation requirements
+        is_required = any(
+            validation.get('type') == 'required' 
+            for validation in mapping.get('validation', [])
+        )
         allows_none = any(
             validation.get('type') == 'allow-empty' 
             for validation in mapping.get('validation', [])
@@ -183,12 +230,26 @@ def read_data_from_input(input_path, mapping_schema):
             col_idx = column_index_from_string(col_letter)
             for row in sheet.iter_rows(min_row=start_row, min_col=col_idx, max_col=col_idx, values_only=True):
                 value = row[0]
-                # Handle None or empty values
-                if allows_none and (value is None or (isinstance(value, str) and not value.strip())):
-                    data.append(" ")
-                elif value is not None:
-                    data.append(value)
-                elif not allows_none:
+                # Priority order for handling empty/null values:
+                # 1. If value exists, use it
+                # 2. If empty and has default value, use default
+                # 3. If empty, no default, but required - raise error
+                # 4. If empty, no default, allows_none - use empty space
+                # 5. Otherwise keep as null
+                if value is None or (isinstance(value, str) and not value.strip()):
+                    if default_value is not None:
+                        # Default value takes highest priority for empty fields
+                        data.append(default_value)
+                    elif is_required:
+                        # Required fields must have a value
+                        raise ValueError(f"{field_name} is required but found empty value")
+                    elif allows_none:
+                        # If field allows empty and has no default, use space
+                        data.append(" ")
+                    else:
+                        # Keep as null if no other conditions apply
+                        data.append(value)
+                else:
                     data.append(value)
         else:
             # Handle fixed ranges and single cells
