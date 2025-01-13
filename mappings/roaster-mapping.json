@@ -36,6 +36,10 @@
                             "horizontal": "left",
                             "vertical": "center",
                             "wrap_text": false
+                        },
+                        "border": {
+                            "style": "none",
+                            "color": "FFFFFF"
                         }
                     }
                 }
@@ -55,86 +59,202 @@
             ],
             "transformations": ["capitalize"],
             "destination": [
-              {
-                "sheet": "Sheet1",
-                "range": "C25:C_",
-                "format": {
-                  "font": {
-                    "size": 11,
-                    "name": "Calibri",
-                    "color": "000000"
-                  },
-                  "alignment": {
-                    "horizontal": "left",
-                    "vertical": "center",
-                    "wrap_text": false
-                  }
+                {
+                    "sheet": "Sheet1",
+                    "range": "C25:C_",
+                    "format": {
+                        "font": {
+                            "size": 11,
+                            "name": "Calibri",
+                            "color": "000000"
+                        },
+                        "alignment": {
+                            "horizontal": "left",
+                            "vertical": "center",
+                            "wrap_text": false
+                        },
+                        "border": {
+                            "style": "none",
+                            "color": "FFFFFF"
+                        }
+                    }
                 }
-              }
             ]
         },
         {
-          "field_name": "Classification",
+            "field_name": "Classification",
+            "source": {
+                "sheet": "Sheet1",
+                "range": "E2:E_"
+            },
+            "validation": [
+                {
+                    "type": "required",
+                    "message": "Classification is required"
+                }
+            ],
+            "transformations": ["title_case"],
+            "destination": [
+                {
+                    "sheet": "Sheet1",
+                    "range": "H25:H_",
+                    "format": {
+                        "font": {
+                            "size": 11,
+                            "name": "Calibri",
+                            "color": "000000"
+                        },
+                        "alignment": {
+                            "horizontal": "center",
+                            "vertical": "bottom",
+                            "wrap_text": false
+                        },
+                        "border": {
+                            "style": "none",
+                            "color": "FFFFFF"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "field_name": "Gender",
+            "source": {
+                "sheet": "Sheet1",
+                "range": "F2:F_"
+            },
+            "validation": [
+                {
+                    "type": "allow-empty",
+                    "message": "Gender field can be empty"
+                }
+            ],
+            "transformations": ["uppercase"],
+            "destination": [
+                {
+                    "sheet": "Sheet1",
+                    "range": "L25:L_",
+                    "format": {
+                        "font": {
+                            "size": 11,
+                            "name": "Calibri",
+                            "color": "000000"
+                        },
+                        "alignment": {
+                            "horizontal": "left",
+                            "vertical": "bottom",
+                            "wrap_text": false
+                        }
+                    }
+                }
+            ]
+        },
+        {
+          "field_name": "TL Phone Number",
           "source": {
-            "sheet": "Sheet1",
-            "range": "E2:E_"
+              "sheet": "Sheet1",
+              "range": "A2:A_"
           },
           "validation": [
             {
-              "type": "required",
-              "message": "Classification is required"
+                "type": "allow-empty",
+                "message": "TL - Phone Number field can be empty"
             }
           ],
-          "transformations": ["title_case"],
+          "transformations": [],
+          "destination": [
+              {
+                  "sheet": "Sheet1",
+                  "range": "G25:G_",
+                  "format": {
+                      "font": {
+                          "size": 10,
+                          "name": "Cambria",
+                          "color": "000000"
+                      },
+                      "alignment": {
+                          "horizontal": "center",
+                          "vertical": "bottom",
+                          "wrap_text": false
+                      },
+                      "border": {
+                          "style": "none",
+                          "color": "FFFFFF"
+                      }
+                  }
+              }
+          ]
+        },
+        {
+          "field_name": "Equip Type",
+          "source" : {
+              "sheet": "Sheet1",
+              "range": "G2:G_"
+          },
+          "validation": [
+              {
+                  "type": "allow-empty",
+                  "message": "Equip Type could be empty"
+              }
+          ],
+          "transformations": ["alternate_term(equipment_type)"],
           "destination": [
             {
-              "sheet": "Sheet1",
-              "range": "H25:H_",
-              "format": {
-                "font": {
-                  "size": 11,
-                  "name": "Calibri",
-                  "color": "000000"
-                },
-                "alignment": {
-                  "horizontal": "center",
-                  "vertical": "bottom",
-                  "wrap_text": false
+                "sheet": "Sheet1",
+                "range": "J25:J_",
+                "format": {
+                    "font": {
+                        "size": 11,
+                        "name": "Aptos Narrow",
+                        "color": "000000"
+                    },
+                    "alignment": {
+                        "horizontal": "center",
+                        "vertical": "bottom",
+                        "wrap_text": false
+                    },
+                    "border": {
+                        "style": "none",
+                        "color": "FFFFFF"
+                    }
                 }
-              }
             }
           ]
         },
         {
-          "field_name": "Gender",
+          "field_name": "Equip #",
           "source": {
-            "sheet": "Sheet1",
-            "range": "F2:F_"
+              "sheet": "Sheet1",
+              "range": "H2:H_"
           },
           "validation": [
-            {
-              "type": "required",
-              "message": "Gender is required"
-            }
-          ],
-          "transformations": ["uppercase"],
-          "destination": [
-            {
-              "sheet": "Sheet1",
-              "range": "L25:L_",
-              "format": {
-                "font": {
-                  "size": 11,
-                  "name": "Calibri",
-                  "color": "000000"
-                },
-                "alignment": {
-                  "horizontal": "left",
-                  "vertical": "bottom",
-                  "wrap_text": false
-                }
+              {
+                  "type": "allow-empty",
+                  "message": "Equip # could be empty"
               }
-            }
+          ],
+          "transformations": [],
+          "destination": [
+              {
+                  "sheet": "Sheet1",
+                  "range": "K25:K_",
+                  "format": {
+                      "font": {
+                          "size": 11,
+                          "name": "Aptos Narrow",
+                          "color": "000000"
+                      },
+                      "alignment": {
+                          "horizontal": "center",
+                          "vertical": "bottom",
+                          "wrap_text": false
+                      },
+                      "border": {
+                          "style": "none",
+                          "color": "FFFFFF"
+                      }
+                  }
+              }
           ]
         }
     ],
@@ -177,6 +297,31 @@
                 "type": "solid",
                 "color": "EEEEEE"
             }
+        }
+    },
+    "value_mappings": {
+        "equipment_type": {
+            "Bucket Material Handler 51'-60'": "Bucket Truck",
+            "Backyard Machine": "Rear Property Machine",
+            "Mechanic Truck": "Other",
+            "Pole Trailer": "Other",
+            "Haul Truck and Trailer": "Other",
+            "Pickup": "Pick-up",
+            "Outlier - Internal": "Mapper - Official"
+        },
+        "classification": {
+          "Journeyman Lineman": "Line JL",
+          "Outlier - Internal": "Mapper - Official",
+          "Groundman / Driver": "Line Groundhand",
+          "Equipment Operator": "Equipment Op"
+        },
+        "equip_no":{
+          "Outlier - Internal": "Mapper - Official",
+          "BT-1184 SQUIRT": "BT-1184",
+          "C025": "PT-CO25",
+          "2055": "ST-2055",
+          "SM3150": "SM1/3150",
+          "3304": "ST-3304"
         }
     }
 }

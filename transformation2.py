@@ -4,15 +4,16 @@ from openpyxl.utils import get_column_letter, column_index_from_string
 from pprint import pprint
 import sys
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
+from difflib import get_close_matches
 
 # # Define file paths
 # input_file_path = "./roaster/input/input1.xlsx"
 # output_file_path = "./roaster/output/output_template.xlsx"
 # mapping_file_path = "./mappings/roaster-mapping.json"
 # Define file paths
-input_file_path = "./test/testInputFiles/input1.xlsm"
-output_file_path = "./test/testOutputFiles/output.xlsm"
-mapping_file_path = "./mappings/mapping3.json"
+# input_file_path = "./test/testInputFiles/input1.xlsm"
+# output_file_path = "./test/testOutputFiles/output.xlsm"
+mapping_file_path = "./mappings/roaster-mapping.json"
 
 
 # Load the mapping schema globally
@@ -71,6 +72,34 @@ def title_case(text):
             
     return ' '.join(result)
 
+def alternate_term(text, mapping_key):
+    """Replace text with its alternate term from value_mappings using fuzzy matching"""
+    if not text:
+        return text
+    
+    if isinstance(text, list):
+        return [alternate_term(item, mapping_key) for item in text]
+    
+    # Get the mapping dictionary for the specified key
+    value_mappings = mapping_schema.get('value_mappings', {}).get(mapping_key, {})
+    
+    if not value_mappings:
+        return text
+    
+    # Try exact match first
+    if text in value_mappings:
+        return value_mappings[text]
+    
+    # If no exact match, try fuzzy matching
+    matches = get_close_matches(text, value_mappings.keys(), n=1, cutoff=0.75)
+    
+    # If we found a fuzzy match, use its mapping
+    if matches:
+        return value_mappings[matches[0]]
+    
+    # If no match found, return original text
+    return text
+
 # Map transformation names to functions
 transformation_functions = {
     'split_name': split_name,
@@ -78,26 +107,36 @@ transformation_functions = {
     'convert_to_integer': convert_to_integer,
     'uppercase': uppercase,
     'title_case': title_case,
+    'alternate_term': alternate_term,
 }
 
 def apply_transformations(data, transformations):
     for transformation in transformations:
-        func = transformation_functions.get(transformation)
+        func_name = transformation
+        params = []
+        
+        # Check if transformation has parameters
+        if '(' in transformation:
+            func_name = transformation.split('(')[0]
+            params_str = transformation.split('(')[1].rstrip(')')
+            params = [param.strip() for param in params_str.split(',') if param.strip()]
+        
+        func = transformation_functions.get(func_name)
         if func:
             if isinstance(data, list):
                 transformed_data = []
                 for item in data:
                     if isinstance(item, list):
-                        result = [func(sub_item) for sub_item in item]
+                        result = [func(sub_item, *params) for sub_item in item]
                     else:
-                        result = func(item)
+                        result = func(item, *params)
                     if isinstance(result, tuple):
                         transformed_data.append(list(result))
                     else:
                         transformed_data.append(result)
                 data = transformed_data
             else:
-                data = func(data)
+                data = func(data, *params)
     return data
 
 def validate_data(data, validations):
@@ -112,6 +151,10 @@ def validate_data(data, validations):
                         raise ValueError(validation['message'])
             elif not data.strip():
                 raise ValueError(validation['message'])
+        # Add handling for allow-empty validation
+        elif validation['type'] == 'allow-empty':
+            # No validation needed, this is just a flag
+            pass
 
 def read_data_from_input(input_path, mapping_schema):
     # Load the workbook and select the active sheet
@@ -125,6 +168,12 @@ def read_data_from_input(input_path, mapping_schema):
         cell_range = source['range']
         sheet = workbook[sheet_name]
         
+        # Check if field allows none
+        allows_none = any(
+            validation.get('type') == 'allow-empty' 
+            for validation in mapping.get('validation', [])
+        )
+        
         # Handle special cases for dynamic ranges
         if cell_range.endswith('_'):
             start_cell = cell_range.split(':')[0]
@@ -133,9 +182,14 @@ def read_data_from_input(input_path, mapping_schema):
             data = []
             col_idx = column_index_from_string(col_letter)
             for row in sheet.iter_rows(min_row=start_row, min_col=col_idx, max_col=col_idx, values_only=True):
-                if all(cell is None for cell in row):
-                    continue
-                data.append(row[0])
+                value = row[0]
+                # Handle None or empty values
+                if allows_none and (value is None or (isinstance(value, str) and not value.strip())):
+                    data.append(" ")
+                elif value is not None:
+                    data.append(value)
+                elif not allows_none:
+                    data.append(value)
         else:
             # Handle fixed ranges and single cells
             if ':' in cell_range:
@@ -176,6 +230,14 @@ def apply_cell_format(cell, format_config):
     if not format_config:
         return
     
+    # Clear any existing borders first to prevent inheritance
+    cell.border = Border(
+        left=Side(style=None),
+        right=Side(style=None),
+        top=Side(style=None),
+        bottom=Side(style=None)
+    )
+    
     if 'font' in format_config:
         cell.font = Font(**format_config['font'])
     
@@ -189,14 +251,15 @@ def apply_cell_format(cell, format_config):
     
     if 'border' in format_config:
         border_style = format_config['border']['style']
-        border_color = format_config['border']['color']
-        border = Border(
-            left=Side(style=border_style, color=border_color),
-            right=Side(style=border_style, color=border_color),
-            top=Side(style=border_style, color=border_color),
-            bottom=Side(style=border_style, color=border_color)
-        )
-        cell.border = border
+        border_color = format_config['border'].get('color', '000000')
+        
+        if border_style.lower() != 'none':
+            cell.border = Border(
+                left=Side(style=border_style, color=border_color),
+                right=Side(style=border_style, color=border_color),
+                top=Side(style=border_style, color=border_color),
+                bottom=Side(style=border_style, color=border_color)
+            )
     
     if 'alignment' in format_config:
         cell.alignment = Alignment(**format_config['alignment'])
@@ -379,8 +442,42 @@ def use_mapping_generate_output(data_store, mapping_schema, output_file_path):
     # Save the workbook to the output file path
     output_workbook.save(output_file_path)
 
-# Call the function to read data from input
-data_store = read_data_from_input(input_file_path, mapping_schema)
+def merge_data_stores(data_stores):
+    """Merge multiple data stores into one"""
+    merged_store = {}
+    for store in data_stores:
+        for field_name, data in store.items():
+            if field_name not in merged_store:
+                merged_store[field_name] = []
+            if isinstance(data, list):
+                merged_store[field_name].extend(data)
+            else:
+                merged_store[field_name].append(data)
+    return merged_store
 
-# Call the function to generate the output file
-use_mapping_generate_output(data_store, mapping_schema, output_file_path)
+def process_files(mapping_schema):
+    # Get file paths from mapping schema
+    input_files = mapping_schema['input_files']
+    output_file_path = mapping_schema['output_file']['path']
+    
+    # Process each input file and collect data
+    data_stores = []
+    for input_file in input_files:
+        input_file_path = input_file['path']
+        print(f"Processing input file: {input_file_path}")
+        data_store = read_data_from_input(input_file_path, mapping_schema)
+        data_stores.append(data_store)
+    
+    # Merge all data stores
+    merged_data_store = merge_data_stores(data_stores)
+    
+    # Generate output with merged data
+    use_mapping_generate_output(merged_data_store, mapping_schema, output_file_path)
+
+if __name__ == "__main__":
+    # Load the mapping schema
+    with open(mapping_file_path, 'r') as file:
+        mapping_schema = json.load(file)
+    
+    # Process all files
+    process_files(mapping_schema)
