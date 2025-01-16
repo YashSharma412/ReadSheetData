@@ -1,0 +1,27 @@
+{
+    "value_mappings": {
+        "equipment_type": {
+            "Bucket Material Handler 51'-60'": "Bucket Truck",
+            "Backyard Machine": "Rear Property Machine",
+            "Mechanic Truck": "Other",
+            "Pole Trailer": "Other",
+            "Haul Truck and Trailer": "Other",
+            "Pickup": "Pick-up",
+            "Outlier - Internal": "Mapper - Official"
+        },
+        "classification": {
+            "Journeyman Lineman": "Line JL",
+            "Outlier - Internal": "Mapper - Official",
+            "Groundman / Driver": "Line Groundhand",
+            "Equipment Operator": "Equipment Op"
+        },
+        "equip_no": {
+            "Outlier - Internal": "Mapper - Official",
+            "BT-1184 SQUIRT": "BT-1184",
+            "C025": "PT-CO25",
+            "2055": "ST-2055",
+            "SM3150": "SM1/3150",
+            "3304": "ST-3304"
+        }
+    }
+}

@@ -1,87 +1,87 @@
 {
-  "mappings": [
-      {
-          "field_name": "Custom Field Name",
-          "source": {
-              "sheet": "SheetName",
-              "range": "CellRange"
-          },
-          "validation": [
-              {
-                  "type": "ValidationType",
-                  "message": "Validation Message"
-              }
-          ],
-          "transformations": ["Transformation1", "Transformation2"],
-          "destination": [
-              {
-                  "sheet": "DestinationSheetName",
-                  "range": "DestinationCellRange",
-                  "merge": "MergedCellRange",
-                  "format": {
-                      "font": {
-                          "bold": true,
-                          "size": 12,
-                          "name": "FontName",
-                          "color": "FontColorHex"
-                      },
-                      "alignment": {
-                          "horizontal": "HorizontalAlignment",
-                          "vertical": "VerticalAlignment",
-                          "wrap_text": true
-                      },
-                      "fill": {
-                          "type": "FillType",
-                          "color": "FillColorHex"
-                      }
-                  },
-                  "conditional_format": {
-                      "when": {
-                          "field": "ConditionField",
-                          "equals": "ConditionValue"
-                      },
-                      "apply": {
-                          "fill": {
-                              "type": "solid",
-                              "color": "ConditionalFillColorHex"
-                          }
-                      }
-                  }
-              }
-          ],
-          "default": "Default Value"
-      }
-  ],
-  "functions": {
-      "CustomFunction1": {
-          "description": "Function Description",
-          "parameters": ["Parameter1", "Parameter2"]
-      },
-      "CustomFunction2": {
-          "description": "Function Description"
-      }
-  },
-  "default_formats": {
-      "data_cells": {
-          "border": {
-              "style": "BorderStyle",
-              "color": "BorderColorHex"
-          },
-          "font": {
-              "name": "FontName",
-              "size": 11
-          }
-      },
-      "headers": {
-          "font": {
-              "bold": true,
-              "name": "HeaderFontName",
-              "size": 12
-          },
-          "fill": {
-              "type": "solid",
-              "color": "HeaderFillColorHex"
-          }
-      }
-  }
+    "mappings": [
+        {
+            "field_name": "Custom Field Name",
+            "source": {
+                "sheet": "SheetName",
+                "range": "CellRange"
+            },
+            "validation": [
+                {
+                    "type": "ValidationType",
+                    "message": "Validation Message"
+                }
+            ],
+            "transformations": ["Transformation1", "Transformation2"],
+            "destination": [
+                {
+                    "sheet": "DestinationSheetName",
+                    "range": "DestinationCellRange",
+                    "merge": "MergedCellRange",
+                    "format": {
+                        "font": {
+                            "bold": true,
+                            "size": 12,
+                            "name": "FontName",
+                            "color": "FontColorHex"
+                        },
+                        "alignment": {
+                            "horizontal": "HorizontalAlignment",
+                            "vertical": "VerticalAlignment",
+                            "wrap_text": true
+                        },
+                        "fill": {
+                            "type": "FillType",
+                            "color": "FillColorHex"
+                        }
+                    },
+                    "conditional_format": {
+                        "when": {
+                            "field": "ConditionField",
+                            "equals": "ConditionValue"
+                        },
+                        "apply": {
+                            "fill": {
+                                "type": "solid",
+                                "color": "ConditionalFillColorHex"
+                            }
+                        }
+                    }
+                }
+            ],
+            "default": "Default Value"
+        }
+    ],
+    "functions": {
+        "CustomFunction1": {
+            "description": "Function Description",
+            "parameters": ["Parameter1", "Parameter2"]
+        },
+        "CustomFunction2": {
+            "description": "Function Description"
+        }
+    },
+    "default_formats": {
+        "data_cells": {
+            "border": {
+                "style": "BorderStyle",
+                "color": "BorderColorHex"
+            },
+            "font": {
+                "name": "FontName",
+                "size": 11
+            }
+        },
+        "headers": {
+            "font": {
+                "bold": true,
+                "name": "HeaderFontName",
+                "size": 12
+            },
+            "fill": {
+                "type": "solid",
+                "color": "HeaderFillColorHex"
+            }
+        }
+    }
 }

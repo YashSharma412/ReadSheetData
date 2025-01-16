@@ -9,14 +9,24 @@ import os
 import shutil
 from pathlib import Path
 
+# Configuration that will later come from database
+INPUT_FILES = [
+    {"path": "./roaster/input/input1.xlsx", "type": "excel"},
+    {"path": "./roaster/input/input2.xlsx", "type": "excel"}
+]
+TEMPLATE_FILE = {"path": "./ref/output_template.xlsx", "type": "excel"}
+OUTPUT_PATH = "./roaster/output/"
 
-
-
+# File paths for mappings
 mapping_file_path = "./mappings/roaster-mapping.json"
+data_mapping_file_path = "./mappings/data-mappings.json"
 
-# Load the mapping schema globally
+# Load the mapping schemas globally
 with open(mapping_file_path, "r") as file:
     mapping_schema = json.load(file)
+
+with open(data_mapping_file_path, "r") as file:
+    data_mappings = json.load(file)
 
 # Define transformation functions
 def split_name(name, separator=" "):
@@ -96,19 +106,19 @@ def title_case(text):
 
     return " ".join(result)
 
-def alternate_term(text, mapping_key):
+def data_mapper(text, mapping_key):
     """Replace text with its alternate term from value_mappings using fuzzy matching"""
     if not text:
         return text
 
     if isinstance(text, list):
-        return [alternate_term(item, mapping_key) for item in text]
+        return [data_mapper(item, mapping_key) for item in text]
 
     # Convert input to string for comparison
     text = str(text)
 
-    # Get the mapping dictionary for the specified key
-    value_mappings = mapping_schema.get("value_mappings", {}).get(mapping_key, {})
+    # Get the mapping dictionary for the specified key from data_mappings
+    value_mappings = data_mappings.get("value_mappings", {}).get(mapping_key, {})
 
     if not value_mappings:
         return text
@@ -188,7 +198,7 @@ transformation_functions = {
     "convert_to_integer": convert_to_integer,
     "uppercase": uppercase,
     "title_case": title_case,
-    "alternate_term": alternate_term,
+    "data_mapper": data_mapper,
     "generate_data_based_on": generate_data_based_on,
 }
 
@@ -626,19 +636,16 @@ def get_next_available_filename(output_dir, base_name="output", ext=".xlsx"):
         i += 1
 
 def process_files(mapping_schema):
-    # Get file paths from mapping schema
-    input_files = mapping_schema["input_files"]
-    template_path = mapping_schema.get("template_file", {}).get("path")
-    output_dir = mapping_schema["output_path"]
+    # Use configuration variables instead of reading from mapping_schema
+    input_files = INPUT_FILES
+    template_path = TEMPLATE_FILE.get("path")
+    output_dir = OUTPUT_PATH
 
-    # Ensure output directory exists
+    # Rest of the function remains the same
     os.makedirs(output_dir, exist_ok=True)
-
-    # Get next available output filename
     output_file_path = get_next_available_filename(output_dir)
 
     try:
-        # Process each input file and collect data
         data_stores = []
         for input_file in input_files:
             input_file_path = input_file["path"]
@@ -649,7 +656,7 @@ def process_files(mapping_schema):
                 # print(f"Max rows in {input_file_path} - {sheet_name}: {max_row}")
             data_store = read_and_validate_data(input_file_path, mapping_schema)
             data_stores.append(data_store)
-
+            
         # Merge all data stores
         merged_data_store = merge_data_stores(data_stores)
 
@@ -679,6 +686,5 @@ if __name__ == "__main__":
     # Load the mapping schema
     with open(mapping_file_path, "r") as file:
         mapping_schema = json.load(file)
-
     # Process all files
     process_files(mapping_schema)
