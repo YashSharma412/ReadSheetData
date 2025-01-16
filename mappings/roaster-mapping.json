@@ -94,7 +94,7 @@
                     "message": "Classification is required"
                 }
             ],
-            "transformations": ["alternate_term(classification)","title_case"],
+            "transformations": ["alternate_term(classification)", "title_case"],
             "destination": [
                 {
                     "sheet": "Sheet1",
@@ -156,44 +156,44 @@
             ]
         },
         {
-          "field_name": "TL Phone Number",
-          "source": {
-              "sheet": "Sheet1",
-              "range": "A2:A_"
-          },
-          "validation": [
-            {
-                "type": "allow-empty",
-                "message": "TL - Phone Number field can be empty"
-            }
-          ],
-          "transformations": [],
-          "destination": [
-              {
-                  "sheet": "Sheet1",
-                  "range": "G25:G_",
-                  "format": {
-                      "font": {
-                          "size": 10,
-                          "name": "Cambria",
-                          "color": "000000"
-                      },
-                      "alignment": {
-                          "horizontal": "center",
-                          "vertical": "bottom",
-                          "wrap_text": false
-                      },
-                      "border": {
-                          "style": "none",
-                          "color": "FFFFFF"
-                      }
-                  }
-              }
-          ]
+            "field_name": "TL Phone Number",
+            "source": {
+                "sheet": "Sheet1",
+                "range": "A2:A_"
+            },
+            "validation": [
+                {
+                    "type": "allow-empty",
+                    "message": "TL - Phone Number field can be empty"
+                }
+            ],
+            "transformations": [],
+            "destination": [
+                {
+                    "sheet": "Sheet1",
+                    "range": "G25:G_",
+                    "format": {
+                        "font": {
+                            "size": 10,
+                            "name": "Cambria",
+                            "color": "000000"
+                        },
+                        "alignment": {
+                            "horizontal": "center",
+                            "vertical": "bottom",
+                            "wrap_text": false
+                        },
+                        "border": {
+                            "style": "none",
+                            "color": "FFFFFF"
+                        }
+                    }
+                }
+            ]
         },
         {
             "field_name": "Equip Type",
-            "source" : {
+            "source": {
                 "sheet": "Sheet1",
                 "range": "G2:G_"
             },

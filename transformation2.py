@@ -1,13 +1,16 @@
 import json
-from openpyxl import load_workbook, Workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.utils import get_column_letter, column_index_from_string
+from openpyxl.styles import Font, Fill, Border, Side, Alignment, PatternFill
 from pprint import pprint
 import sys
-from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from difflib import get_close_matches
 import os
 import shutil
 from pathlib import Path
+
+
+
 
 mapping_file_path = "./mappings/roaster-mapping.json"
 
@@ -374,21 +377,17 @@ def apply_transformations_to_data_store(data_store, mapping_schema):
                     )
     return data_store
 
+
 def apply_cell_format(cell, format_config):
     if not format_config:
         return
 
-    # Clear any existing borders first to prevent inheritance
-    cell.border = Border(
-        left=Side(style=None),
-        right=Side(style=None),
-        top=Side(style=None),
-        bottom=Side(style=None),
-    )
-
+    # Create Font object
     if "font" in format_config:
-        cell.font = Font(**format_config["font"])
+        font_config = format_config["font"].copy()
+        cell.font = Font(**font_config)
 
+    # Create Fill object
     if "fill" in format_config:
         fill_config = format_config["fill"].copy()
         if "type" in fill_config:
@@ -397,38 +396,42 @@ def apply_cell_format(cell, format_config):
             fill_config["fgColor"] = fill_config.pop("color")
         cell.fill = PatternFill(**fill_config)
 
+    # Create Border object
     if "border" in format_config:
-        border_style = format_config["border"]["style"]
-        border_color = format_config["border"].get("color", "000000")
-
+        border_config = format_config["border"]
+        border_style = border_config.get("style", "thin")
+        border_color = border_config.get("color", "000000")
+        
+        # Only apply borders if style is not "none"
         if border_style.lower() != "none":
-            cell.border = Border(
-                left=Side(style=border_style, color=border_color),
-                right=Side(style=border_style, color=border_color),
-                top=Side(style=border_style, color=border_color),
-                bottom=Side(style=border_style, color=border_color),
-            )
+            side = Side(style=border_style, color=border_color)
+            cell.border = Border(left=side, right=side, top=side, bottom=side)
 
+    # Create Alignment object
     if "alignment" in format_config:
-        cell.alignment = Alignment(**format_config["alignment"])
+        alignment_config = format_config["alignment"].copy()
+        cell.alignment = Alignment(**alignment_config)
+        
 
 def format_range(sheet, cell_range, format_config):
     """Apply formatting to a range of cells"""
+    if not format_config:
+        return
+        
     if ":" in cell_range:
         if cell_range.endswith("_"):
             # Handle dynamic ranges
             start_cell = cell_range.split(":")[0]
             col_letter = start_cell[0]
             start_row = int(start_cell[1:])
+            
             # Find the last row with data in this column
             last_row = start_row
             col_idx = column_index_from_string(col_letter)
-            for row in sheet.iter_rows(
-                min_row=start_row, min_col=col_idx, max_col=col_idx
-            ):
+            for row in sheet.iter_rows(min_row=start_row, min_col=col_idx, max_col=col_idx):
                 if row[0].value is not None:
                     last_row = row[0].row
-
+            
             # Apply formatting from start_row to last_row
             for row in range(start_row, last_row + 1):
                 cell = sheet[f"{col_letter}{row}"]
@@ -436,12 +439,13 @@ def format_range(sheet, cell_range, format_config):
         else:
             # Handle fixed ranges
             start_cell, end_cell = cell_range.split(":")
-            for row in sheet[start_cell:end_cell]:
+            for row in sheet[cell_range]:
                 for cell in row:
                     apply_cell_format(cell, format_config)
     else:
         # Handle single cell
         apply_cell_format(sheet[cell_range], format_config)
+
 
 def apply_conditional_format(sheet, row_index, format_config, data_store, condition):
     """Apply formatting based on conditions from other fields"""
@@ -470,151 +474,131 @@ def apply_conditional_format(sheet, row_index, format_config, data_store, condit
         return cell_format
     return None
 
+
 def use_mapping_generate_output(data_store, mapping_schema, output_file_path):
-    # * Load the existing workbook if it exists, otherwise create a new one
+    """Generate an Excel output file based on mapping schema and data store"""
     try:
         output_workbook = load_workbook(output_file_path)
     except FileNotFoundError:
         output_workbook = Workbook()
 
-    # * Iterate over each mapping in the schema
+    # Get default formats
     default_formats = mapping_schema.get("default_formats", {})
 
     for mapping in mapping_schema["mappings"]:
-        field_name = mapping["field_name"]  # e.g., "Employee Name"
-        destinations = mapping[
-            "destination"
-        ]  # [object{ sheet, range }, object{ sheet, range }, ...]
+        field_name = mapping["field_name"]
+        destinations = mapping["destination"]
         data = data_store.get(field_name, [])
-        # * Iterate over each destination for the current field
-        for destination in destinations:
-            sheet_name = destination["sheet"]  # Sheet1
-            cell_ranges = destination["range"].split(",")  # e.g., "D6:D_,E6:E_"
 
-            # * Get or create the sheet in the output workbook
+        for destination in destinations:
+            sheet_name = destination["sheet"]
+            
+            # Get or create sheet
             if sheet_name in output_workbook.sheetnames:
                 sheet = output_workbook[sheet_name]
             else:
                 sheet = output_workbook.create_sheet(sheet_name)
 
-            # * Iterate over each cell range specified for the destination
-            for idx, cell_range in enumerate(cell_ranges):
+            # Process each range in the destination
+            for idx, cell_range in enumerate(destination["range"].split(",")):
+                cell_range = cell_range.strip()  # Remove whitespace
+                
                 if ":" in cell_range:
                     if cell_range.endswith("_"):
-                        start_cell = cell_range.split(":")[0]  # e.g., "D6"
-                        col_letter = start_cell[0]  # e.g., "D"
-                        start_row = int(start_cell[1:])  # e.g., 6
-
-                        # Dynamically calculate the end row based on the data length
-                        end_row = (
-                            start_row + len(data) - 1
-                        )  # Extend to match the data length
-
-                        # Write data to the dynamic range
+                        # Handle dynamic ranges
+                        start_cell = cell_range.split(":")[0]
+                        col_letter = start_cell[0]
+                        start_row = int(start_cell[1:])
+                        
+                        # Write data and apply formatting
                         for row_offset, value in enumerate(data):
-                            if isinstance(value, list):  # Handle 2D array
-                                if idx < len(
-                                    value
-                                ):  # Ensure we use the correct sub-index
-                                    cell = sheet[
-                                        f"{col_letter}{start_row + row_offset}"
-                                    ]
+                            cell = sheet[f"{col_letter}{start_row + row_offset}"]
+                            
+                            # Handle 2D array data
+                            if isinstance(value, list):
+                                if idx < len(value):
                                     cell.value = value[idx]
-                                    # First apply base formatting
-                                    if "format" in destination:
-                                        apply_cell_format(cell, destination["format"])
-                                    # Then apply conditional formatting if condition is met
-                                    if "conditional_format" in destination:
-                                        cond_format = apply_conditional_format(
-                                            sheet,
-                                            row_offset,
-                                            destination["format"],
-                                            data_store,
-                                            destination["conditional_format"],
-                                        )
-                                        if cond_format:
-                                            apply_cell_format(cell, cond_format)
-                            else:  # Handle 1D data
-                                cell = sheet[f"{col_letter}{start_row + row_offset}"]
+                            else:
                                 cell.value = value
-                                # First apply base formatting
-                                if "format" in destination:
-                                    apply_cell_format(cell, destination["format"])
-                                # Then apply conditional formatting if condition is met
-                                if "conditional_format" in destination:
-                                    cond_format = apply_conditional_format(
-                                        sheet,
-                                        row_offset,
-                                        destination["format"],
-                                        data_store,
-                                        destination["conditional_format"],
-                                    )
-                                    if cond_format:
-                                        apply_cell_format(cell, cond_format)
+                            
+                            # Apply base formatting
+                            if "format" in destination:
+                                apply_cell_format(cell, destination["format"])
+                            elif "data_cells" in default_formats:
+                                apply_cell_format(cell, default_formats["data_cells"])
+                            
+                            # Apply conditional formatting if specified
+                            if "conditional_format" in destination:
+                                cond_format = apply_conditional_format(
+                                    sheet,
+                                    row_offset,
+                                    destination["format"],
+                                    data_store,
+                                    destination["conditional_format"]
+                                )
+                                if cond_format:
+                                    apply_cell_format(cell, cond_format)
+                    
                     else:
                         # Handle fixed ranges
-                        start_cell, end_cell = cell_range.split(
-                            ":"
-                        )  # e.g., "D6", "D15"
-                        start_col = column_index_from_string(
-                            start_cell[0]
-                        )  # Convert column letter to index
-                        start_row = int(start_cell[1:])  # Starting row
-                        end_row = int(end_cell[1:])  # Ending row
-
-                        # Check if the current data item is a 2D array
-                        if isinstance(data, list) and isinstance(data[0], list):
-                            if idx < len(
-                                data[0]
-                            ):  # Ensure the range corresponds to the data dimensions
-                                for row_offset, item in enumerate(data):
-                                    if (
-                                        start_row + row_offset <= end_row
-                                    ):  # Ensure we don't exceed the range
-                                        sheet.cell(
-                                            row=start_row + row_offset,
-                                            column=start_col,
-                                            value=item[idx],
-                                        )
-                        else:
-                            # Handle single-column data for ranges
-                            for row_offset, item in enumerate(data):
-                                if start_row + row_offset <= end_row:
-                                    sheet.cell(
-                                        row=start_row + row_offset,
-                                        column=start_col,
-                                        value=item,
-                                    )
+                        start_cell, end_cell = cell_range.split(":")
+                        start_col = column_index_from_string(start_cell[0])
+                        start_row = int(start_cell[1:])
+                        end_row = int(end_cell[1:])
+                        
+                        # Write data and apply formatting
+                        for row_offset, value in enumerate(data):
+                            if start_row + row_offset <= end_row:
+                                cell = sheet.cell(row=start_row + row_offset, column=start_col)
+                                
+                                # Handle 2D array data
+                                if isinstance(value, list):
+                                    if idx < len(value):
+                                        cell.value = value[idx]
+                                else:
+                                    cell.value = value
+                                
+                                # Apply formatting
+                                if "format" in destination:
+                                    apply_cell_format(cell, destination["format"])
+                                elif "data_cells" in default_formats:
+                                    apply_cell_format(cell, default_formats["data_cells"])
+                
                 else:
-                    # Handle single cell case
+                    # Handle single cell
                     cell = sheet[cell_range]
                     if isinstance(data, list) and data:
-                        cell.value = data[idx] if idx < len(data) else None
+                        if isinstance(data[0], list) and idx < len(data[0]):
+                            cell.value = data[0][idx]
+                        else:
+                            cell.value = data[0]
                     else:
                         cell.value = data
+                    
+                    # Apply formatting
+                    if "format" in destination:
+                        apply_cell_format(cell, destination["format"])
+                    elif "data_cells" in default_formats:
+                        apply_cell_format(cell, default_formats["data_cells"])
 
-            # Remove the format_range call for cells that have conditional formatting
-            # * Apply formatting
-            if "format" in destination and not "conditional_format" in destination:
-                # For merged cells, apply format to the entire merge range
-                if "merge" in destination:
-                    format_range(sheet, destination["merge"], destination["format"])
-                # For non-merged cells, apply to the standard range
-                else:
-                    for cell_range in destination["range"].split(","):
-                        format_range(sheet, cell_range, destination["format"])
-
-            # * Handle cell merging if specified
+            #* Handle cell merging if specified
             if "merge" in destination:
                 merge_range = destination["merge"]
-                sheet.merge_cells(merge_range)
+                try:
+                    # Unmerge first if already merged
+                    if merge_range in sheet.merged_cells:
+                        sheet.unmerge_cells(merge_range)
+                    
+                    sheet.merge_cells(merge_range)
+                    # Apply format to merged range
+                    if "format" in destination:
+                        format_range(sheet, merge_range, destination["format"])
+                    elif "data_cells" in default_formats:
+                        format_range(sheet, merge_range, default_formats["data_cells"])
+                except ValueError as e:
+                    print(f"Warning: Could not merge cells {merge_range}: {str(e)}")
 
-            # * Apply default formatting if no specific format is provided
-            elif "data_cells" in default_formats:
-                for cell_range in destination["range"].split(","):
-                    format_range(sheet, cell_range, default_formats["data_cells"])
-
-    # Save the workbook to the output file path
+    # Save the workbook
     output_workbook.save(output_file_path)
 
 def merge_data_stores(data_stores):
