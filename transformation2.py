@@ -93,7 +93,6 @@ def title_case(text):
 
     return " ".join(result)
 
-
 def alternate_term(text, mapping_key):
     """Replace text with its alternate term from value_mappings using fuzzy matching"""
     if not text:
@@ -121,13 +120,11 @@ def alternate_term(text, mapping_key):
     # If no exact match, try fuzzy matching
     try:
         matches = get_close_matches(text, string_mappings.keys(), n=1, cutoff=0.75)
-
         # If we found a fuzzy match, use its mapping
         if matches:
             return string_mappings[matches[0]]
     except TypeError as e:
         print(f"Warning: Fuzzy matching failed for '{text}' - {str(e)}")
-
     # If no match found or error occurred, return original text
     return text
 
@@ -193,7 +190,6 @@ transformation_functions = {
 }
 
 def apply_transformations(data, transformations):
-    
     for transformation in transformations:
         func_name = transformation
         params = []
@@ -212,7 +208,6 @@ def apply_transformations(data, transformations):
             else:
                 data = func(data, *params)
     return data
-
 
 def validate_data(data, validations):
     for validation in validations:
@@ -235,7 +230,6 @@ def validate_data(data, validations):
         elif validation["type"] == "allow-empty":
             pass
 
-
 def read_and_validate_data(input_path, mapping_schema):
     workbook = load_workbook(input_path, data_only=True)
     data_store = {}
@@ -251,19 +245,8 @@ def read_and_validate_data(input_path, mapping_schema):
 
             if cell_range.endswith("_"):
                 start_cell = cell_range.split(":")[0]
-                col_letter = start_cell[0]
                 start_row = int(start_cell[1:])
-                data_length = 0
-                col_idx = column_index_from_string(col_letter)
-                for row in sheet.iter_rows(
-                    min_row=start_row,
-                    min_col=col_idx,
-                    max_col=col_idx,
-                    values_only=True,
-                ):
-                    if row[0] is not None:
-                        data_length += 1
-                max_data_length = max(max_data_length, data_length)
+                max_data_length = max(max_data_length, sheet.max_row - start_row + 1)
 
     # Second pass: process all fields
     for mapping in mapping_schema["mappings"]:
@@ -381,7 +364,6 @@ def read_and_validate_data(input_path, mapping_schema):
     # pprint(data_store)
     return data_store
 
-
 def apply_transformations_to_data_store(data_store, mapping_schema):
     for field_name, data in data_store.items():
         for mapping in mapping_schema["mappings"]:
@@ -391,7 +373,6 @@ def apply_transformations_to_data_store(data_store, mapping_schema):
                         data, mapping["transformations"]
                     )
     return data_store
-
 
 def apply_cell_format(cell, format_config):
     if not format_config:
@@ -505,7 +486,6 @@ def use_mapping_generate_output(data_store, mapping_schema, output_file_path):
             "destination"
         ]  # [object{ sheet, range }, object{ sheet, range }, ...]
         data = data_store.get(field_name, [])
-        
         # * Iterate over each destination for the current field
         for destination in destinations:
             sheet_name = destination["sheet"]  # Sheet1
@@ -664,7 +644,7 @@ def get_next_available_filename(output_dir, base_name="output", ext=".xlsx"):
 def process_files(mapping_schema):
     # Get file paths from mapping schema
     input_files = mapping_schema["input_files"]
-    template_path = mapping_schema["template_file"]["path"]
+    template_path = mapping_schema.get("template_file", {}).get("path")
     output_dir = mapping_schema["output_path"]
 
     # Ensure output directory exists
@@ -673,30 +653,42 @@ def process_files(mapping_schema):
     # Get next available output filename
     output_file_path = get_next_available_filename(output_dir)
 
-    # Copy template file to output location
-    if os.path.exists(template_path):
-        shutil.copy2(template_path, output_file_path)
+    try:
+        # Process each input file and collect data
+        data_stores = []
+        for input_file in input_files:
+            input_file_path = input_file["path"]
+            workbook = load_workbook(input_file_path, data_only=True)
+            for sheet_name in workbook.sheetnames:
+                worksheet = workbook[sheet_name]
+                max_row = worksheet.max_row
+                # print(f"Max rows in {input_file_path} - {sheet_name}: {max_row}")
+            data_store = read_and_validate_data(input_file_path, mapping_schema)
+            data_stores.append(data_store)
 
-    # Process each input file and collect data
-    data_stores = []
-    for input_file in input_files:
-        input_file_path = input_file["path"]
-        # print(f"Processing input file: {input_file_path}")
-        data_store = read_and_validate_data(input_file_path, mapping_schema)
-        data_stores.append(data_store)
+        # Merge all data stores
+        merged_data_store = merge_data_stores(data_stores)
 
-    # Merge all data stores
-    merged_data_store = merge_data_stores(data_stores)
+        # Apply transformations to the merged data store
+        transformed_data_store = apply_transformations_to_data_store(
+            merged_data_store, mapping_schema
+        )
 
-    # Apply transformations to the merged data store
-    transformed_data_store = apply_transformations_to_data_store(
-        merged_data_store, mapping_schema
-    )
+        # Copy template file to output location or create a new blank workbook
+        if template_path and os.path.exists(template_path):
+            shutil.copy2(template_path, output_file_path)
+        else:
+            Workbook().save(output_file_path)
 
-    # Generate output with transformed data
-    use_mapping_generate_output(
-        transformed_data_store, mapping_schema, output_file_path
-    )
+        # Generate output with transformed data
+        use_mapping_generate_output(
+            transformed_data_store, mapping_schema, output_file_path
+        )
+    except Exception as e:
+        print(f"Error processing files: {e}")
+        if os.path.exists(output_file_path):
+            os.remove(output_file_path)
+        raise
 
 
 if __name__ == "__main__":
