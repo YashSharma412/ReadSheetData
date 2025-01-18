@@ -1,4 +1,12 @@
 {
+    "merge_files": [
+        {
+            "type": "same",
+            "header_row": 1,
+            "data_start_row": 2,
+            "sheet": "active"
+        }
+    ],
     "mappings": [
         {
             "field_name": "Last Name",

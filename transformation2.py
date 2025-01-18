@@ -655,8 +655,7 @@ def process_files(mapping_schema):
                 max_row = worksheet.max_row
                 # print(f"Max rows in {input_file_path} - {sheet_name}: {max_row}")
             data_store = read_and_validate_data(input_file_path, mapping_schema)
-            data_stores.append(data_store)
-            
+            data_stores.append(data_store)           
         # Merge all data stores
         merged_data_store = merge_data_stores(data_stores)
 
